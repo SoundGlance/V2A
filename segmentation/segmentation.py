@@ -87,9 +87,7 @@ def candidate_boundary(line_prob_horizontal, line_prob_vertical):
 	while True:
 		HP = np.extract(line_prob_horizontal > np.mean(line_prob_horizontal) + thr * np.std(line_prob_horizontal), line_prob_horizontal)
 		VP = np.extract(line_prob_vertical > np.mean(line_prob_vertical) + thr * np.std(line_prob_vertical), line_prob_vertical)
-		if (len(HP) + 1) * (len(VP) + 1) <= 35:
-			break
-		elif len(HP) * len(VP) == 0 and max(len(HP), len(VP)) <= 23:
+		if (len(HP) + 1) * (len(VP) + 1) <= 12:
 			break
 		else:
 			thr += delta
