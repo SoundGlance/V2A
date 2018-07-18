@@ -87,7 +87,7 @@ def candidate_boundary(line_prob_horizontal, line_prob_vertical):
 	while True:
 		HP = np.extract(line_prob_horizontal > np.mean(line_prob_horizontal) + thr * np.std(line_prob_horizontal), line_prob_horizontal)
 		VP = np.extract(line_prob_vertical > np.mean(line_prob_vertical) + thr * np.std(line_prob_vertical), line_prob_vertical)
-		if (len(HP) + 1) * (len(VP) + 1) <= 12:
+		if (len(HP) + 1) * (len(VP) + 1) <= 16:
 			break
 		else:
 			thr += delta
@@ -131,11 +131,6 @@ def segmentation(array, depth=0, max_depth=6):
 	line_prob_horizontal, line_prob_vertical = line_probability(edge_prob_horizontal, edge_prob_vertical)
 	border, cand_bound_horizontal, cand_bound_vertical = candidate_boundary(line_prob_horizontal, line_prob_vertical)
 
-	result = np.copy(array)
-	border_color = [0, 0, 0]
-	border_color[depth % 3] = 255
-	result[border == 1] = border_color
-
 	index_is = np.append(np.insert(cand_bound_horizontal, 0, 0), array.shape[0]-1)
 	index_js = np.append(np.insert(cand_bound_vertical, 0, 0), array.shape[1]-1)
 	tilings = load_tiling(len(index_is)-1, len(index_js)-1)
@@ -143,7 +138,13 @@ def segmentation(array, depth=0, max_depth=6):
 		(segmentation_quality(tiling, index_is, index_js, edge_prob_horizontal, edge_prob_vertical), -len(tiling), tiling)
 		for tiling in tilings])[2]
 
-	print(len(index_is)-1, len(index_js)-1, best_tiling)
+	result = np.copy(array)
+	border_color = [0, 0, 0]
+	border_color[depth % 3] = 255
+	for i1, i2, j1, j2 in best_tiling:
+			left_i, right_i, left_j, right_j = index_is[i1], index_is[i2], index_js[j1], index_js[j2]
+			result[(left_i,right_i),left_j:right_j+1] = border_color
+			result[left_i+1:right_i,(left_j,right_j)] = border_color
 
 	if depth < max_depth:
 		for i1, i2, j1, j2 in best_tiling:
@@ -157,6 +158,7 @@ def segmentation(array, depth=0, max_depth=6):
 
 import sys
 import time
+
 
 dataname = sys.argv[1]
 image = Image.open('./sample_data/%s' % dataname) # Image mode should be 'RGB' or 'RGBA'

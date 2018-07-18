@@ -54,7 +54,7 @@ set<set<rect>> tiling(int i1, int i2, int j1, int j2, int n){
 }
 
 int main(){
-    for(int n=1;n<=12;n++) for(int m=1;n*m<=12;m++){
+    for(int n=1;n<=16;n++) for(int m=1;n*m<=16;m++){
         set<set<rect>> ts = tiling(0, n, 0, m, 8);
 
         char filename[128]; sprintf(filename, "tilings/tiling_%dx%d.txt", n, m);
