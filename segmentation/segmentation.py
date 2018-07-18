@@ -112,6 +112,17 @@ def load_tiling(n, m):
 		ret.append([info[i:i+4] for i in range(0, len(info), 4)])
 	return ret
 
+def segmentation_quality(tiling, index_is, index_js, e_h, e_v):
+	"sum of 2*p-1 for all border lines"
+	ret = 0
+	for i1, i2, j1, j2 in tiling:
+		left_i, right_i, left_j, right_j = index_is[i1], index_is[i2], index_js[j1], index_js[j2]
+		ret += np.sum(2 * e_h[(left_i,right_i),left_j:right_j+1] - 1)
+		ret += np.sum(2 * e_v[left_i+1:right_i,(left_j,right_j)] - 1)
+	# By this the outermost border is counted only once,
+	# but it does not matter for comparison since every tiling contains the outermost border
+	return ret / 2
+
 def segmentation(array, depth=0, max_depth=6):
 	array = array[:,:,:3] # detach A channel (RGB only)
 	sobel_horizontal, sobel_vertical = sobel(array)
@@ -125,16 +136,22 @@ def segmentation(array, depth=0, max_depth=6):
 	border_color[depth % 3] = 255
 	result[border == 1] = border_color
 
-	index_is = np.append(np.insert(cand_bound_horizontal, 0, -1), array.shape[0])
-	index_js = np.append(np.insert(cand_bound_vertical, 0, -1), array.shape[1])	
+	index_is = np.append(np.insert(cand_bound_horizontal, 0, 0), array.shape[0]-1)
+	index_js = np.append(np.insert(cand_bound_vertical, 0, 0), array.shape[1]-1)
+	tilings = load_tiling(len(index_is)-1, len(index_js)-1)
+	best_tiling = max([
+		(segmentation_quality(tiling, index_is, index_js, edge_prob_horizontal, edge_prob_vertical), -len(tiling), tiling)
+		for tiling in tilings])[2]
+
+	print(len(index_is)-1, len(index_js)-1, best_tiling)
 
 	if depth < max_depth:
-		for left_i, right_i in list(zip(index_is[:-1], index_is[1:])):
-			for left_j, right_j in list(zip(index_js[:-1], index_js[1:])):
-				if right_i - left_i < 15 or right_j - left_j < 15:
-					continue
-				seg = segmentation(result[left_i+1:right_i,left_j+1:right_j], depth + 1, max_depth)
-				result[left_i+1:right_i,left_j+1:right_j] = seg
+		for i1, i2, j1, j2 in best_tiling:
+			left_i, right_i, left_j, right_j = index_is[i1], index_is[i2], index_js[j1], index_js[j2]
+			if right_i - left_i < 15 or right_j - left_j < 15:	
+				continue
+			seg = segmentation(result[left_i+1:right_i,left_j+1:right_j], depth + 1, max_depth)
+			result[left_i+1:right_i,left_j+1:right_j] = seg
 
 	return result
 
