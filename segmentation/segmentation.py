@@ -104,6 +104,13 @@ def candidate_boundary(line_prob_horizontal, line_prob_vertical):
 
 	return border, cand_bound_horizontal, cand_bound_vertical
 
+def load_tiling(n, m):
+	lines = open('./tilings/tiling_%dx%d.txt' % (n, m)).readlines()[1:]
+	ret = []
+	for line in lines:
+		info = list(map(int, line.split()[1:]))
+		ret.append([info[i:i+4] for i in range(0, len(info), 4)])
+	return ret
 
 def segmentation(array, depth=0, max_depth=6):
 	array = array[:,:,:3] # detach A channel (RGB only)
