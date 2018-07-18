@@ -54,18 +54,20 @@ set<set<rect>> tiling(int i1, int i2, int j1, int j2, int n){
 }
 
 int main(){
-    int n, m; scanf("%d%d", &n, &m);
-    set<set<rect>> ts = tiling(0, n, 0, m, 8);
+    for(int n=1;n<=12;n++) for(int m=1;n*m<=12;m++){
+        set<set<rect>> ts = tiling(0, n, 0, m, 8);
 
-    printf("%d\n", (int)ts.size());
-    FILE *f = fopen("rects.txt", "w");
-    for(const set<rect>& t : ts){
-        fprintf(f, "%d: ", (int)t.size());
-        for(const rect& r : t){
-            fprintf(f, "(%d-%d,%d-%d) ", r.first.first, r.first.second, r.second.first, r.second.second);
+        char filename[128]; sprintf(filename, "tilings/tiling_%dx%d.txt", n, m);
+        FILE *f = fopen(filename, "w");
+        fprintf(f, "%d\n", (int)ts.size());
+        printf("%dx%d->%d\n", n, m, (int)ts.size());
+        for(const set<rect>& t : ts){
+            fprintf(f, "%d ", (int)t.size());
+            for(const rect& r : t){
+                fprintf(f, "%d %d %d %d ", r.first.first, r.first.second, r.second.first, r.second.second);
+            }
+            fprintf(f, "\n");
         }
-        fprintf(f, "\n");
     }
-
     return 0;
 }
