@@ -119,9 +119,6 @@ def load_tiling(n, m):
 def segmentation_quality(tiling, index_is, index_js, e_h, e_v):
 	"sum of 2*p-1 for all border lines"
 	ret = 0
-	for rect in tiling:
-		if len(rect) != 4:
-			print(len(index_is)-1, len(index_js)-1, tiling)
 	for i1, i2, j1, j2 in tiling:
 		left_i, right_i, left_j, right_j = index_is[i1], index_is[i2], index_js[j1], index_js[j2]
 		ret += np.sum(2 * e_h[(left_i,right_i),left_j:right_j+1] - 1)
