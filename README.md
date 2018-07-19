@@ -12,7 +12,7 @@ Python libraries
 * scipy
 * pillow
 
-## xample
+## Example
 
 ```bash
 cd segmentation
