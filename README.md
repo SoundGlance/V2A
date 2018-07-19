@@ -2,7 +2,7 @@
 
 Implementation of ["Purely vision-based segmentation of web pages 
 for assistive technology"](https://www.sciencedirect.com/science/article/pii/S1077314216000527) 
-with several simplications and revisions.
+with several simplications and revisions. **Still in development!!**
 
 ## Dependency
 
