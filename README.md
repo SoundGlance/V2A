@@ -20,3 +20,5 @@ python3 segmentation.py naver_webtoon.png
 ```
 
 This code loads image named `naver_webtoon.png` from the directory `/segmentation/sample_data` and save the results at the same folder.
+
+![a sample result of segmentation](https://media.giphy.com/media/OkhB2rUZbDqivUhOFQ/giphy.gif)
