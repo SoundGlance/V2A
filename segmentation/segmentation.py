@@ -81,16 +81,20 @@ def line_probability(edge_prob_horizontal, edge_prob_vertical):
 	return line_prob_horizontal, line_prob_vertical
 
 def candidate_boundary(line_prob_horizontal, line_prob_vertical):
-	thr = 3
+	thr_h = 3
+	thr_v = 3
 	delta = 0.5
 
 	while True:
-		HP = np.extract(line_prob_horizontal > np.mean(line_prob_horizontal) + thr * np.std(line_prob_horizontal), line_prob_horizontal)
-		VP = np.extract(line_prob_vertical > np.mean(line_prob_vertical) + thr * np.std(line_prob_vertical), line_prob_vertical)
+		HP = np.extract(line_prob_horizontal > np.mean(line_prob_horizontal) + thr_h * np.std(line_prob_horizontal), line_prob_horizontal)
+		VP = np.extract(line_prob_vertical > np.mean(line_prob_vertical) + thr_v * np.std(line_prob_vertical), line_prob_vertical)
 		if (len(HP) + 1) * (len(VP) + 1) <= 16:
 			break
 		else:
-			thr += delta
+			if len(HP) > len(VP):
+				thr_h += delta
+			else:
+				thr_v += delta
 	
 	is_border_horizontal = np.isin(line_prob_horizontal, HP)
 	is_border_vertical = np.isin(line_prob_vertical, VP)
@@ -115,6 +119,9 @@ def load_tiling(n, m):
 def segmentation_quality(tiling, index_is, index_js, e_h, e_v):
 	"sum of 2*p-1 for all border lines"
 	ret = 0
+	for rect in tiling:
+		if len(rect) != 4:
+			print(len(index_is)-1, len(index_js)-1, tiling)
 	for i1, i2, j1, j2 in tiling:
 		left_i, right_i, left_j, right_j = index_is[i1], index_is[i2], index_js[j1], index_js[j2]
 		ret += np.sum(2 * e_h[(left_i,right_i),left_j:right_j+1] - 1)
