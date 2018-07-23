@@ -39,4 +39,4 @@ while len(url_list) < num_collect:
 
 result = '\n'.join(['[%d] %s' % (i+1, u) for i, u in enumerate(url_list)])
 
-open('result.txt', 'w').write(result)
+open('result_%s.txt' % '_'.join(search_keyword.split()), 'w').write(result)
