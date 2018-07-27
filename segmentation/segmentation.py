@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import scipy.ndimage
 from scipy.stats import norm
@@ -6,6 +7,9 @@ from PIL import Image
 
 def save_as_black_and_white_image(matrix, filename):
 	Image.fromarray((matrix * 255 / np.max(matrix)).astype('uint8')).save(filename)
+
+def save_as_image(matrix, filename):
+	Image.fromarray(matrix.astype('uint8')).save(filename)
 
 def sobel(array, save=False):
 	"apply horizontal and vertical Sobel partial derivative filter"
@@ -127,20 +131,38 @@ def segmentation_quality(tiling, index_is, index_js, e_h, e_v):
 	# but it does not matter for comparison since every tiling contains the outermost border
 	return ret / 2
 
-def segmentation(array, depth=0, max_depth=6):
+def split_to_the_best_tiles(index_is, index_js, edge_prob_horizontal, edge_prob_vertical):
+	tilings = load_tiling(len(index_is)-1, len(index_js)-1)
+	best_tiling_info = max(
+		(
+			segmentation_quality(tiling, index_is, index_js, edge_prob_horizontal, edge_prob_vertical), # * (2 if len(tiling) == 1 else 1),
+			-len(tiling), 
+			tiling
+		) for tiling in tilings
+	)
+	return best_tiling_info[0], best_tiling_info[2]
+
+def segmentation(dataname, array, depth=0, max_depth=6):
 	array = array[:,:,:3] # detach A channel (RGB only)
+	
+	if np.sum(np.std(array, axis=2)) < 15:
+		return array
+	elif depth == max_depth:
+		save_as_image(array, 'sample_data/[%s]_segments_%d_%s.png' % (dataname, max_depth, ''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for _ in range(10)])))
+		return array
+	
 	sobel_horizontal, sobel_vertical = sobel(array)
 	salience_horizontal, salience_vertical = salience(sobel_horizontal, sobel_vertical)
 	edge_prob_horizontal, edge_prob_vertical = edge_probility(salience_horizontal, salience_vertical)
 	line_prob_horizontal, line_prob_vertical = line_probability(edge_prob_horizontal, edge_prob_vertical)
 	border, cand_bound_horizontal, cand_bound_vertical = candidate_boundary(line_prob_horizontal, line_prob_vertical)
+	index_is = np.append(np.insert(cand_bound_horizontal, 0, 0), border.shape[0]-1)
+	index_js = np.append(np.insert(cand_bound_vertical, 0, 0), border.shape[1]-1)
+	seg_qual, best_tiling = split_to_the_best_tiles(index_is, index_js, edge_prob_horizontal, edge_prob_vertical)
 
-	index_is = np.append(np.insert(cand_bound_horizontal, 0, 0), array.shape[0]-1)
-	index_js = np.append(np.insert(cand_bound_vertical, 0, 0), array.shape[1]-1)
-	tilings = load_tiling(len(index_is)-1, len(index_js)-1)
-	best_tiling = max([
-		(segmentation_quality(tiling, index_is, index_js, edge_prob_horizontal, edge_prob_vertical), -len(tiling), tiling)
-		for tiling in tilings])[2]
+	if seg_qual <= 0 or len(best_tiling) == 1:
+		save_as_image(array, 'sample_data/[%s]_segments_%d_%s.png' % (dataname, max_depth, ''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for _ in range(10)])))
+		return array
 
 	result = np.copy(array)
 	border_color = [0, 0, 0]
@@ -149,14 +171,12 @@ def segmentation(array, depth=0, max_depth=6):
 			left_i, right_i, left_j, right_j = index_is[i1], index_is[i2], index_js[j1], index_js[j2]
 			result[(left_i,right_i),left_j:right_j+1] = border_color
 			result[left_i+1:right_i,(left_j,right_j)] = border_color
-
-	if depth < max_depth:
-		for i1, i2, j1, j2 in best_tiling:
-			left_i, right_i, left_j, right_j = index_is[i1], index_is[i2], index_js[j1], index_js[j2]
-			if right_i - left_i < 15 or right_j - left_j < 15:	
-				continue
-			seg = segmentation(result[left_i+1:right_i,left_j+1:right_j], depth + 1, max_depth)
-			result[left_i+1:right_i,left_j+1:right_j] = seg
+	for i1, i2, j1, j2 in best_tiling:
+		left_i, right_i, left_j, right_j = index_is[i1], index_is[i2], index_js[j1], index_js[j2]
+		if right_i - left_i < 15 or right_j - left_j < 15:	
+			continue
+		seg = segmentation(dataname, result[left_i+1:right_i,left_j+1:right_j], depth + 1, max_depth)
+		result[left_i+1:right_i,left_j+1:right_j] = seg
 
 	return result
 
@@ -165,10 +185,16 @@ import time
 
 
 dataname = sys.argv[1]
+depth = int(sys.argv[2]) if len(sys.argv) > 2 else 6
 image = Image.open('./sample_data/%s' % dataname) # Image mode should be 'RGB' or 'RGBA'
-for i in range(6):
+result = segmentation(dataname, np.array(image), max_depth=depth)
+save_as_image(result, './sample_data/[%s]_result_depth_%d.png' % (dataname, depth))
+
+"""
+for i in range(1, 7):
 	ta = time.time()
 	result = segmentation(np.array(image), max_depth=i)
 	Image.fromarray(result.astype('uint8')).save('./sample_data/[%s]_result_depth_%d.png' % (dataname, i))
 	tb = time.time()
 	print("Segmentation of depth %d was done in %d seconds" % (i, tb - ta))
+"""
